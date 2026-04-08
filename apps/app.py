@@ -1,7 +1,7 @@
 #from dotenv import load_dotenv
 import os
 #load_dotenv()
-
+import streamlit as st
 from langchain_google_genai import ChatGoogleGenerativeAI
 
 llm = ChatGoogleGenerativeAI(
@@ -17,7 +17,6 @@ llm = ChatGoogleGenerativeAI(
 #     result =llm.invoke(query)
 #     print("AI: ", result.content)
 
-import streamlit as st
 st.title("🧠 AskBuddy - AI QnA Bot")        #title idea : "Curious? Just ask!"
 st.markdown("My QnA Bot with LangChain and Googl Gemini !")
 
