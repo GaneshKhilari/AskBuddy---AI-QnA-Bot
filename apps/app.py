@@ -1,10 +1,13 @@
-from dotenv import load_dotenv
+#from dotenv import load_dotenv
 import os
-load_dotenv()
+#load_dotenv()
 
 from langchain_google_genai import ChatGoogleGenerativeAI
-llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash")
-google_api_key=os.getenv("AIzaSyC7Fa4Ax94Nlu5YcW4BWvQX55QEuPxloHU")
+
+llm = ChatGoogleGenerativeAI(
+    model="gemini-2.5-flash",
+    google_api_key=os.getenv("GOOGLE_API_KEY")
+)
 
 # while True:
 #     query = input("User: ")
