@@ -6,19 +6,14 @@ import streamlit as st
 
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-#from langchain_openai import OpenAIEmbeddings
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_groq import ChatGroq
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_ollama import ChatOllama
 from langchain_chroma import Chroma
 from langchain.tools import tool
 from langchain.agents import create_agent
 from langgraph.checkpoint.memory import InMemorySaver
 
-
 # SESSION STATE
-
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -35,7 +30,6 @@ CHROMA_PATH = "./chroma_db"
 os.makedirs(PDF_FOLDER, exist_ok=True)
 
 # EMBEDDINGS + VECTOR DB
-
 @st.cache_resource
 def get_embeddings():
     return HuggingFaceEmbeddings(
@@ -70,6 +64,7 @@ def process_pdf(file_path):
     chunks = splitter.split_documents(docs)
 
     st.session_state.vector_store.add_documents(chunks)
+    
 # TOOL
 @tool
 def retrieve_context(query: str):
@@ -97,10 +92,7 @@ def retrieve_context(query: str):
 def get_agent(_vector_db):
     
 
-    #llm = ChatGroq(model="llama-3.1-8b-instant")
-    llm = ChatGroq(
-         model="openai/gpt-oss-20b"
-    )
+    llm = ChatGroq(model="llama-3.1-8b-instant")
     system_prompt = """
 You are a strict document-based assistant.
 
@@ -124,6 +116,8 @@ Rules:
 
 st.session_state.agent = get_agent(vector_db)
 # FILE UPLOADER
+
+
 uploaded_files = st.file_uploader(
     "Upload PDF Files",
     type=["pdf"],
@@ -153,7 +147,6 @@ if uploaded_files:
         st.success("PDFs processed successfully.")
 
 # CHAT HISTORY
-
 for message in st.session_state.messages:
 
     with st.chat_message(message["role"]):

@@ -10,15 +10,14 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_groq import ChatGroq
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_ollama import ChatOllama
 from langchain_chroma import Chroma
 from langchain.tools import tool
 from langchain.agents import create_agent
 from langgraph.checkpoint.memory import InMemorySaver
 
-
+# ==========================
 # SESSION STATE
-
+# ==========================
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -29,13 +28,22 @@ if "vector_store" not in st.session_state:
 if "agent" not in st.session_state:
     st.session_state.agent = None
 
+# ==========================
+# CONFIG
+# ==========================
+
 PDF_FOLDER = r"C:\GenAI\apps\doc_files"
 CHROMA_PATH = "./chroma_db"
 
 os.makedirs(PDF_FOLDER, exist_ok=True)
 
+# ==========================
 # EMBEDDINGS + VECTOR DB
+# ==========================
 
+#embeddings = OpenAIEmbeddings(
+#   model="text-embedding-3-small"
+#)
 @st.cache_resource
 def get_embeddings():
     return HuggingFaceEmbeddings(
@@ -43,7 +51,9 @@ def get_embeddings():
     )
 
 embeddings = get_embeddings()
-
+# embeddings = HuggingFaceEmbeddings(
+#     model_name="sentence-transformers/all-MiniLM-L6-v2"
+# )
 @st.cache_resource
 def get_vector_db(_embeddings):
     return Chroma(
@@ -52,11 +62,16 @@ def get_vector_db(_embeddings):
     )
 
 vector_db = get_vector_db(embeddings)   
-
+# vector_db = Chroma(
+#     persist_directory=CHROMA_PATH,
+#     embedding_function=embeddings
+# )
 
 st.session_state.vector_store = vector_db
 
+# ==========================
 # PDF PROCESSING
+# ==========================
 def process_pdf(file_path):
 
     loader = PyPDFLoader(file_path)
@@ -70,7 +85,10 @@ def process_pdf(file_path):
     chunks = splitter.split_documents(docs)
 
     st.session_state.vector_store.add_documents(chunks)
+
+# ==========================
 # TOOL
+# ==========================
 @tool
 def retrieve_context(query: str):
     """Retrieve relevant information from uploaded PDF documents."""
@@ -91,15 +109,47 @@ def retrieve_context(query: str):
 
     return context
 
+# ==========================
 # AGENT
+# ==========================
+
+# if st.session_state.agent is None:
+
+#     llm = ChatGroq(
+#         model="openai/gpt-oss-20b"
+#     )
+
+#     system_prompt = """
+# You are a strict document-based assistant.
+
+# Rules:
+# 1. ALWAYS use the retrieve_context tool.
+# 2. Answer ONLY from retrieved context.
+# 3. If context is NO_RELEVANT_CONTEXT, say:
+#    "I don't know based on the provided documents."
+# 4. Never use outside knowledge.
+# 5. Never guess.
+# """
+
+#     memory = InMemorySaver()
+
+#     st.session_state.agent = create_agent(
+#         model=llm,
+#         tools=[retrieve_context],
+#         system_prompt=system_prompt,
+#         checkpointer=memory
+#     )
+# ==========================
+# AGENT
+# ==========================
 
 @st.cache_resource
 def get_agent(_vector_db):
     
 
-    #llm = ChatGroq(model="llama-3.1-8b-instant")
     llm = ChatGroq(
-         model="openai/gpt-oss-20b"
+        model="openai/gpt-oss-20b"
+       
     )
     system_prompt = """
 You are a strict document-based assistant.
@@ -123,7 +173,10 @@ Rules:
     )
 
 st.session_state.agent = get_agent(vector_db)
+# ==========================
 # FILE UPLOADER
+# ==========================
+
 uploaded_files = st.file_uploader(
     "Upload PDF Files",
     type=["pdf"],
@@ -152,14 +205,18 @@ if uploaded_files:
 
         st.success("PDFs processed successfully.")
 
+# ==========================
 # CHAT HISTORY
+# ==========================
 
 for message in st.session_state.messages:
 
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
+# ==========================
 # CHAT INPUT
+# ==========================
 
 query = st.chat_input(
     "Ask a question about your PDFs..."

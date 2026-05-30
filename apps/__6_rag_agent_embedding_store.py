@@ -6,19 +6,14 @@ import streamlit as st
 
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-#from langchain_openai import OpenAIEmbeddings
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_groq import ChatGroq
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_ollama import ChatOllama
 from langchain_chroma import Chroma
 from langchain.tools import tool
 from langchain.agents import create_agent
 from langgraph.checkpoint.memory import InMemorySaver
 
-
 # SESSION STATE
-
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -28,14 +23,16 @@ if "vector_store" not in st.session_state:
 
 if "agent" not in st.session_state:
     st.session_state.agent = None
-
 PDF_FOLDER = r"C:\GenAI\apps\doc_files"
 CHROMA_PATH = "./chroma_db"
+  
+if "processed_files" not in st.session_state:
+    existing_files = os.listdir(PDF_FOLDER) if os.path.exists(PDF_FOLDER) else []
+    st.session_state.processed_files = set(existing_files)
 
 os.makedirs(PDF_FOLDER, exist_ok=True)
 
 # EMBEDDINGS + VECTOR DB
-
 @st.cache_resource
 def get_embeddings():
     return HuggingFaceEmbeddings(
@@ -70,6 +67,7 @@ def process_pdf(file_path):
     chunks = splitter.split_documents(docs)
 
     st.session_state.vector_store.add_documents(chunks)
+    
 # TOOL
 @tool
 def retrieve_context(query: str):
@@ -124,6 +122,8 @@ Rules:
 
 st.session_state.agent = get_agent(vector_db)
 # FILE UPLOADER
+
+
 uploaded_files = st.file_uploader(
     "Upload PDF Files",
     type=["pdf"],
@@ -142,18 +142,20 @@ if uploaded_files:
             )
 
             # Skip already processed files
-            if os.path.exists(file_path):
-                continue
+            if file.name in st.session_state.processed_files:
+                continue  
+
 
             with open(file_path, "wb") as f:
                 f.write(file.getvalue())
 
             process_pdf(file_path)
+            st.session_state.processed_files.add(file.name)
+
 
         st.success("PDFs processed successfully.")
 
 # CHAT HISTORY
-
 for message in st.session_state.messages:
 
     with st.chat_message(message["role"]):
